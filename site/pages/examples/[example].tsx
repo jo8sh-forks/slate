@@ -22,6 +22,7 @@ import PasteHtml from '../../examples/paste-html'
 import PlainText from '../../examples/plaintext'
 import ReadOnly from '../../examples/read-only'
 import RichText from '../../examples/richtext'
+import RichTextXState from '../../examples/richtextxstate'
 import SearchHighlighting from '../../examples/search-highlighting'
 import CodeHighlighting from '../../examples/code-highlighting'
 import Tables from '../../examples/tables'
@@ -46,6 +47,7 @@ const EXAMPLES = [
   ['Plain Text', PlainText, 'plaintext'],
   ['Read-only', ReadOnly, 'read-only'],
   ['Rich Text', RichText, 'richtext'],
+  ['Rich Text XState', RichTextXState, 'richtextxstate'],
   ['Search Highlighting', SearchHighlighting, 'search-highlighting'],
   ['Code Highlighting', CodeHighlighting, 'code-highlighting'],
   ['Tables', Tables, 'tables'],

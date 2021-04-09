@@ -69,17 +69,28 @@ const insertLink = (editor, url) => {
 }
 
 const isLinkActive = editor => {
+  console.log(`Editor:`, editor)
+  console.log(Editor.nodes)
   const [link] = Editor.nodes(editor, {
-    match: n =>
-      !Editor.isEditor(n) && SlateElement.isElement(n) && n.type === 'link',
+    match: n => {
+      console.log(`node: `, n)
+      return (
+        !Editor.isEditor(n) && SlateElement.isElement(n) && n.type === 'link'
+      )
+    },
   })
+  console.log(`link: `, link)
   return !!link
 }
 
 const unwrapLink = editor => {
   Transforms.unwrapNodes(editor, {
-    match: n =>
-      !Editor.isEditor(n) && SlateElement.isElement(n) && n.type === 'link',
+    match: n => {
+      console.log(n)
+      return (
+        !Editor.isEditor(n) && SlateElement.isElement(n) && n.type === 'link'
+      )
+    },
   })
 }
 

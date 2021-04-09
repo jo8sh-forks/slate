@@ -79,7 +79,7 @@ type CustomElement =
   | VideoElement
 
 export type CustomText = {
-  bold?: boolean
+  BOLD?: boolean
   italic?: boolean
   code?: boolean
   text: string
