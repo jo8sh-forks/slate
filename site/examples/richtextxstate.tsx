@@ -14,26 +14,10 @@ import { withHistory } from 'slate-history'
 import { Button, Icon, Toolbar } from '../components'
 import { Machine, assign } from 'xstate'
 import { useMachine } from '@xstate/react'
-
-const toggleStates = {
-  initial: 'inactive',
-  states: {
-    on: {
-      on: {
-        TOGGLE: 'inactive',
-      },
-    },
-    off: {
-      on: {
-        TOGGLE: 'active',
-      },
-    },
-  },
-}
+import { inspect } from '@xstate/inspect'
 
 const useFormatMachine = () => {
   const editor = withHistory(withReact(createEditor()))
-  const [value, setValue] = useState<Descendant[]>(initialValue)
 
   return Machine(
     {
@@ -46,12 +30,30 @@ const useFormatMachine = () => {
           states: {
             active: {
               on: {
-                BOLD: { target: 'inactive', actions: ['toggleBold'] },
+                BOLD: {
+                  target: 'inactive',
+                  cond: (context, event) =>
+                    !isMarkActive(context.editor, 'BOLD'),
+                },
+                TOGGLEBOLD: {
+                  target: 'inactive',
+                  actions: (context, event) =>
+                    Editor.removeMark(context.editor, 'BOLD'),
+                },
               },
             },
             inactive: {
               on: {
-                BOLD: 'active',
+                BOLD: {
+                  target: 'active',
+                  cond: (context, event) =>
+                    isMarkActive(context.editor, 'BOLD'),
+                },
+                TOGGLEBOLD: {
+                  target: 'active',
+                  actions: (context, event) =>
+                    Editor.addMark(context.editor, 'BOLD', true),
+                },
               },
             },
           },
@@ -162,13 +164,14 @@ const useFormatMachine = () => {
             },
           },
         },
-        success: {},
       },
       on: {
-        RESOLVE: {
-          target: 'success',
-          actions: assign({
-            value: (context, event) => event.data,
+        ONCHANGE: {
+          actions: assign((context, event) => {
+            return {
+              value: event.data.value,
+              editor: event.data.editor,
+            }
           }),
         },
       },
@@ -176,7 +179,7 @@ const useFormatMachine = () => {
     {
       actions: {
         toggleBold: (context, event) => {
-          // toggleMark(context.editor, 'BOLD')
+          toggleMark(context.editor, 'BOLD')
         },
       },
     }
@@ -197,7 +200,6 @@ const LIST_TYPES = ['numbered-list', 'bulleted-list']
 const RichTextExample = () => {
   const formatMachine = useFormatMachine()
   const [state, send] = useMachine(formatMachine)
-  const [value, setValue] = useState<Descendant[]>(initialValue)
   const renderElement = useCallback(props => <Element {...props} />, [])
   const renderLeaf = useCallback(props => <Leaf {...props} />, [])
 
@@ -207,15 +209,17 @@ const RichTextExample = () => {
         editor={state.context.editor}
         value={state.context.value}
         onChange={value => {
-          console.log(`value 1:`, value)
-          send({ type: 'RESOLVE', data: value })
-          console.log(`value 2:`, value)
+          send({
+            type: 'ONCHANGE',
+            data: { value, editor: state.context.editor },
+          })
+          send('BOLD')
         }}
       >
         <Toolbar>
           <MarkButtonX
             active={state.value.bold === 'active'}
-            state="BOLD"
+            transition="TOGGLEBOLD"
             icon="format_bold"
           />
           <MarkButton format="BOLD" icon="format_bold" />
@@ -359,13 +363,14 @@ const BlockButton = ({ format, icon }) => {
   )
 }
 
-const MarkButtonX = ({ icon, state, ...others }) => {
+const MarkButtonX = ({ icon, transition, ...others }) => {
   const [_, send] = useContext(MachineContext)
+  console.log(_)
   return (
     <Button
       onMouseDown={event => {
         event.preventDefault()
-        send('BOLD')
+        send(transition)
       }}
       {...others}
     >
@@ -376,7 +381,6 @@ const MarkButtonX = ({ icon, state, ...others }) => {
 
 const MarkButton = ({ format, icon }) => {
   const editor = useSlate()
-  console.log('editor', editor)
   return (
     <Button
       active={isMarkActive(editor, format)}
