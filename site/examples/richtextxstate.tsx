@@ -12,7 +12,7 @@ import {
 import { withHistory } from 'slate-history'
 
 import { Button, Icon, Toolbar } from '../components'
-import { assign, Machine } from 'xstate'
+import { Machine, assign } from 'xstate'
 import { useMachine } from '@xstate/react'
 
 const toggleStates = {
@@ -38,7 +38,7 @@ const useFormatMachine = () => {
   return Machine(
     {
       id: 'format',
-      context: { editor, value, setValue },
+      context: { editor, value: initialValue },
       type: 'parallel',
       states: {
         bold: {
@@ -162,13 +162,21 @@ const useFormatMachine = () => {
             },
           },
         },
+        success: {},
+      },
+      on: {
+        RESOLVE: {
+          target: 'success',
+          actions: assign({
+            value: (context, event) => event.data,
+          }),
+        },
       },
     },
     {
       actions: {
         toggleBold: (context, event) => {
-          console.log(context)
-          console.log(event)
+          // toggleMark(context.editor, 'BOLD')
         },
       },
     }
@@ -192,18 +200,25 @@ const RichTextExample = () => {
   const [value, setValue] = useState<Descendant[]>(initialValue)
   const renderElement = useCallback(props => <Element {...props} />, [])
   const renderLeaf = useCallback(props => <Leaf {...props} />, [])
-  const editor = useMemo(() => withHistory(withReact(createEditor())), [])
 
   return (
     <MachineContext.Provider value={[state, send]}>
-      <Slate editor={editor} value={value} onChange={value => setValue(value)}>
+      <Slate
+        editor={state.context.editor}
+        value={state.context.value}
+        onChange={value => {
+          console.log(`value 1:`, value)
+          send({ type: 'RESOLVE', data: value })
+          console.log(`value 2:`, value)
+        }}
+      >
         <Toolbar>
           <MarkButtonX
             active={state.value.bold === 'active'}
             state="BOLD"
             icon="format_bold"
           />
-          <MarkButton format="bold" icon="format_bold" />
+          <MarkButton format="BOLD" icon="format_bold" />
           <MarkButton format="italic" icon="format_italic" />
           <MarkButton format="underline" icon="format_underlined" />
           <MarkButton format="code" icon="code" />
@@ -224,7 +239,7 @@ const RichTextExample = () => {
               if (isHotkey(hotkey, event as any)) {
                 event.preventDefault()
                 const mark = HOTKEYS[hotkey]
-                toggleMark(editor, mark)
+                toggleMark(state.context.editor, mark)
               }
             }
           }}
@@ -361,6 +376,7 @@ const MarkButtonX = ({ icon, state, ...others }) => {
 
 const MarkButton = ({ format, icon }) => {
   const editor = useSlate()
+  console.log('editor', editor)
   return (
     <Button
       active={isMarkActive(editor, format)}
